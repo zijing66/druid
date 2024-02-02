@@ -15,6 +15,7 @@
  */
 package com.alibaba.druid.sql.dialect.postgresql.parser;
 
+import com.alibaba.druid.sql.ast.SQLCommentHint;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -513,6 +514,10 @@ public class PGSQLStatementParser extends SQLStatementParser {
         return stmt;
     }
     public SQLStatement parseAlter() {
+        List<SQLCommentHint> hints = null;
+        if (!startSqlCommentHintStack.isEmpty()) {
+            hints = startSqlCommentHintStack.pop();
+        }
         Lexer.SavePoint mark = lexer.mark();
         accept(Token.ALTER);
         if (lexer.token() == Token.DATABASE) {
@@ -520,7 +525,11 @@ public class PGSQLStatementParser extends SQLStatementParser {
             return parseAlterDatabase();
         }
         lexer.reset(mark);
-        return super.parseAlter();
+        SQLStatement sqlStatement = super.parseAlter();
+        if (null != hints) {
+            sqlStatement.setHeadHints(hints);
+        }
+        return sqlStatement;
     }
     public SQLStatement parseConnectTo() {
         acceptIdentifier("CONNECT");
@@ -534,9 +543,17 @@ public class PGSQLStatementParser extends SQLStatementParser {
     }
 
     public PGSelectStatement parseSelect() {
+        List<SQLCommentHint> hints = null;
+        if (!startSqlCommentHintStack.isEmpty()) {
+            hints = startSqlCommentHintStack.pop();
+        }
         PGSelectParser selectParser = createSQLSelectParser();
         SQLSelect select = selectParser.select();
-        return new PGSelectStatement(select);
+        PGSelectStatement pgSelectStatement = new PGSelectStatement(select);
+        if (null != hints) {
+            pgSelectStatement.setHeadHints(hints);
+        }
+        return pgSelectStatement;
     }
 
     public SQLStatement parseWith() {

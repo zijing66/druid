@@ -5680,6 +5680,15 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
 
     @Override
     public boolean visit(SQLAlterTableStatement x) {
+
+        final List<SQLCommentHint> headHints = x.getHeadHintsDirect();
+        if (headHints != null) {
+            for (SQLCommentHint hint : headHints) {
+                hint.accept(this);
+                println();
+            }
+        }
+
         print0(ucase ? "ALTER TABLE " : "alter table ");
 
         if (x.isIfExists()) {

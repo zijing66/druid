@@ -43,6 +43,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -62,6 +63,8 @@ public class SQLStatementParser extends SQLParser {
     protected Token expectedNextToken;
     private static final boolean END_TOKEN_CHECKING_ENABLED = !Boolean.getBoolean("druid_sql_parser_end_token_checking_disabled");
     private static final String UNSUPPORT_TOKEN_MSG_PREFIX = "not supported.";
+
+    protected Stack<List<SQLCommentHint>> startSqlCommentHintStack = new Stack<>();
 
     public SQLStatementParser(String sql) {
         this(sql, null);
@@ -122,6 +125,9 @@ public class SQLStatementParser extends SQLParser {
     }
 
     public void parseStatementList(List<SQLStatement> statementList, int max, SQLObject parent) {
+        if (lexer.token == Token.HINT) {
+            startSqlCommentHintStack.add(this.exprParser.parseHints());
+        }
         if (lexer.token == Token.SELECT) {
             String[] words = lexer.text.split("\\s+");
             if (words.length == 2
@@ -4870,6 +4876,9 @@ public class SQLStatementParser extends SQLParser {
 
     public SQLStatement parseStatement() {
         final SQLStatement ret;
+        if (lexer.token == HINT) {
+            startSqlCommentHintStack.push(exprParser.parseHints());
+        }
         if (lexer.token == Token.SELECT) {
             ret = this.parseSelect();
         } else if (lexer.token == Token.INSERT) {
