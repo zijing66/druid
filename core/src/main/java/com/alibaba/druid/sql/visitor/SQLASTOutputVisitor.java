@@ -11729,4 +11729,11 @@ public class SQLASTOutputVisitor extends SQLASTVisitorAdapter implements Paramet
         }
         return false;
     }
+
+    @Override
+    public boolean visit(SQLAlterTableChangeOwner x) {
+        print0(ucase ? "OWNER TO " : "owner to ");
+        print0(x.getOwner().getSimpleName());
+        return false;
+    }
 }
